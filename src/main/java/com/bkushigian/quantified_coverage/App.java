@@ -1,4 +1,4 @@
-package com.bkushigian;
+package com.bkushigian.quantified_coverage;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -10,7 +10,9 @@ import javax.lang.model.type.TypeMirror;
 
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.block.Block;
+import org.checkerframework.dataflow.cfg.block.ConditionalBlock;
 import org.checkerframework.dataflow.cfg.block.ExceptionBlock;
+import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.cfg.visualize.CFGVisualizeLauncher;
 
 /**
@@ -29,15 +31,34 @@ public class App {
         workList.add(cfg.getEntryBlock());
         while (!workList.isEmpty()) {
             Block b = workList.remove(0);
-            if (b instanceof ExceptionBlock) {
-                ExceptionBlock eb = (ExceptionBlock) b;
-                for (Map.Entry<TypeMirror, Set<Block>> e : eb.getExceptionalSuccessors().entrySet()) {
-                    System.err.println("  - Exception Types: " + e.getKey() + " -> " + e.getValue());
-                }
-            }
-            visited.add(b);
             System.out.println("---------------------");
             System.out.println(b);
+            if (b instanceof ExceptionBlock) {
+                ExceptionBlock eb = (ExceptionBlock) b;
+                System.out.println("  - Exception Types:");
+                for (Map.Entry<TypeMirror, Set<Block>> e : eb.getExceptionalSuccessors().entrySet()) {
+                    System.out.println("     + " + e.getKey() + " -> " + e.getValue());
+                }
+            } else if (b instanceof ConditionalBlock) {
+                ConditionalBlock cb = (ConditionalBlock) b;
+                Set<Block> preds = cb.getPredecessors();
+                if (preds.size() != 1) {
+                    throw new RuntimeException("conditional block with more than one predecessor!");
+                }
+                Block pred = preds.iterator().next();
+                List<Node> nodes = pred.getNodes();
+                if (nodes.size() < 1) {
+                    throw new RuntimeException("predecessor block has no condition node");
+                }
+                Node conditionalNode = nodes.get(nodes.size() - 1);
+                Block thenSucc = cb.getThenSuccessor();
+                Block elseSucc = cb.getElseSuccessor();
+                System.out.println("- Cond: " + conditionalNode);
+                System.out.println("- Then: " + thenSucc);
+                System.out.println("- Else: " + elseSucc);
+
+            }
+            visited.add(b);
             System.out.print("- Predecessors: ");
             for (Block sb : b.getPredecessors()) {
                 System.out.print(" " + sb.toString());
