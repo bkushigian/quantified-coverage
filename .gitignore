@@ -2,3 +2,8 @@ target/
 *.class
 .vscode/
 .DS_Store
+**/*.png
+**/*.log
+**/*.svg
+**/*.dot
+**/*.pdf
